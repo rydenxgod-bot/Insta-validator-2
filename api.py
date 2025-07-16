@@ -12,7 +12,7 @@ async def root(username: str = Query(..., description="Instagram username to che
         async with async_playwright() as p:
             browser = await p.chromium.launch(headless=True)
             page = await browser.new_page()
-            await page.goto(f"https://www.instagram.com/{username}/", timeout=15000)
+            await page.goto(f"https://www.instagram.com/{username}/", timeout=30000)
 
             content = await page.content()
             await browser.close()
