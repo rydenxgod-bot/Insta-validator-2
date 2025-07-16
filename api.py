@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Query
 from fastapi.responses import JSONResponse
 from playwright.async_api import async_playwright
-import re
 import json
+import re
 
 app = FastAPI()
 
@@ -16,11 +16,10 @@ async def check_instagram(username: str = Query(..., description="Instagram user
 
             url = f"https://www.instagram.com/{username}/"
             await page.goto(url, timeout=30000, wait_until="domcontentloaded")
-
             content = await page.content()
             await browser.close()
 
-            # Check for invalid username
+            # Detect invalid usernames
             if "<title>Page Not Found" in content or "content=\"404\"" in content:
                 return JSONResponse({
                     "status": "fail",
@@ -28,17 +27,17 @@ async def check_instagram(username: str = Query(..., description="Instagram user
                     "username": username
                 }, status_code=404)
 
-            # Parse embedded JSON from window._sharedData
-            shared_data_match = re.search(r"window\._sharedData\s*=\s*(\{.*\});</script>", content)
-            if not shared_data_match:
+            # Extract __NEXT_DATA__ script JSON
+            match = re.search(r'<script type="application/json" id="__NEXT_DATA__">(.+?)</script>', content)
+            if not match:
                 return JSONResponse({
                     "status": "error",
                     "message": "Unable to extract Instagram profile data.",
                     "username": username
                 }, status_code=500)
 
-            shared_data = json.loads(shared_data_match.group(1))
-            user = shared_data['entry_data']['ProfilePage'][0]['graphql']['user']
+            data = json.loads(match.group(1))
+            user = data["props"]["pageProps"]["graphql"]["user"]
 
             return JSONResponse({
                 "status": "success",
